@@ -2,3 +2,14 @@
 .Rhistory
 .RData
 .Ruserdata
+
+/.quarto/
+analysis.R
+data/Adelie.csv
+data/Gentoo.csv
+data/Chinstrap.csv
+data/subdatasets.csv
+
+results-folder/
+
+*.pdf

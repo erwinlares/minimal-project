@@ -1,0 +1,1 @@
+knitr::purl("analysis.qmd", documentation = 1)

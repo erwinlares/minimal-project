@@ -71,20 +71,21 @@ For this toy analysis, we will load the package `tidyverse` for data manipulatio
 library(tidyverse)
 library(gt)
 
-data_file <- if (!is.null(params$data_file)) {
-  # Quarto render context: params are defined
-  params$data_file
-} else if (interactive()) {
-  # Interactive session: hardcoded path for development
+data_file <- if (interactive()) {
+  # Interactive session in RStudio: hardcoded path for development
   "data/data.csv"
 } else {
-  # Rscript context: read from command-line arguments
-  args <- commandArgs(trailingOnly =TRUE)
-  if (length(args) < 1) stop("Missing required argument: data_file path")
-  args[1]
+  args <- commandArgs(trailingOnly = TRUE)
+  if (length(args) >= 1) {
+    # Rscript context: path passed as command-line argument
+    args[1]
+  } else {
+    # Quarto render context: fall back to params
+    params$data_file
+  }
 }
 
-data <- read.csv(data_file)
+data <- read_csv(data_file)
 ```
 
 ## Tabular results
@@ -114,7 +115,8 @@ moft_bm |>
   tab_header(
     title = "Measures of Tendency",
     subtitle = "Flipper Length in mm"
-  )
+  ) |> 
+  invisible()
 ```
 
 @tbl-mot shows that Adelie penguins are the smallest, Chinstrap penguins are the medium-size species, and Gentoo penguins are the lasgest.
@@ -159,10 +161,20 @@ We can leverage `knitr`, the engine that powers R in Quarto, to extract just the
 ```{r}
 #| eval: false
 
-# rstudioapi::documentPath() |>
-#      basename() |> #makes it a relative path to the                       project directory
-    knitr::purl("analysis.qmd", documentation = 1)
+#    knitr::purl("analysis.qmd", documentation = 1)
+
+# knitr::purl() was moved to purl.R and is called as a Quarto post-render script
+# via _quarto.yml. This ensures analysis.R is automatically regenerated from
+# analysis.qmd on every successful render, eliminating the risk of code drift
+# between the two files.
+
+
 ```
+
+
+## Creating the ancilliary files 
+
+
 
 ```{r}
 #| eval: false
@@ -180,13 +192,13 @@ subsets <- split(data, grouping_variable)
 
 #helper function that takes as an argument a named list and writes a .csv with the contents of each list and names used the naming convention <named-list.csv>
 
-savesublists <- function(df, name){
+save_sublist <- function(df, name){
   write_csv(df, paste0("data/", name, ".csv"))
 }
 
 
 # Use walk() to write each sublist to a .csv file with the same name as the named_list
-walk2(subsets, names(subsets), savesublists)
+walk2(subsets, names(subsets), save_sublist)
 
 
 #subdatasets holds the names of the created subsets.csv
