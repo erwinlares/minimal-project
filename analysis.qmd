@@ -129,15 +129,17 @@ As the old adage goes, "plot is worth a thousand tables". The code chunk below c
 #| label: fig-boxplot
 #| fig-cap: "Flipper length in mm"
 
-data |> 
+p <- data |> 
     ggplot() +
     aes(x = flipper_length_mm, color = species) +
     geom_boxplot() + 
     labs(title = "Flipper length in mm") +
     theme_bw()
+
+p
 ```
 
-At a glance, @fig-boxplot shows Gentoo penguins have the longer flippers of the three species. Adelie penguins have the shortest, but some of the biggest Adelie penguins have flippers are long as some of the small Chintraps.
+ @fig-boxplot shows boxplots derived from the data. Boxplots summarize the distribution of a variable by showing the median, the interquartile range (the middle 50% of the data), and the overall spread. Outliers, if present, appear as individual points beyond the whiskers. This makes boxplots particularly useful for comparing distributions across groups at a glance.
 
 ## Saving results
 
@@ -149,7 +151,7 @@ The code chunk below accomplishes the latter two using the `write_csv()` functio
 
 moft_bm |> write_csv("results-folder/moft-bm.csv")
 
-ggsave("results-folder/fl-mm-plot.png")
+ggsave("results-folder/fl-mm-plot.png", plot = p)
 ```
 
 ## Saving the code
