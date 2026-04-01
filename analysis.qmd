@@ -136,7 +136,10 @@ p <- data |>
     labs(title = "Flipper length in mm") +
     theme_bw()
 
-p
+# Print plot in Quarto/interactive contexts, suppress in Rscript to avoid Rplots.pdf
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) == 0) p
+
 ```
 
  @fig-boxplot shows boxplots derived from the data. Boxplots summarize the distribution of a variable by showing the median, the interquartile range (the middle 50% of the data), and the overall spread. Outliers, if present, appear as individual points beyond the whiskers. This makes boxplots particularly useful for comparing distributions across groups at a glance.
