@@ -10,45 +10,44 @@ knitr:
   opts_chunk: 
     message: false
     warning: false
+params:
+  data_file: "data/data.csv"
 ---
 
 ## The long game
 
-The goal being this project is to document the submission process of an R project to CHTC. The main motivation is to lower *the barrier to entry* to CHTC. It is well known (citations?) that the command line constitutes a painpoint for many researchers that keeps them from leveraging the compute resources offered by CHTC. 
+The goal being this project is to document the submission process of an R project to CHTC. The main motivation is to lower *the barrier to entry* to CHTC. It is well known (citations?) that the command line constitutes a painpoint for many researchers that keeps them from leveraging the compute resources offered by CHTC.
 
+The general steps
 
+-   Motivate\
+-   Carry out analysis\
+-   Containerized the analysis
+-   Publish the container to a registry
+-   Generate .sub and .sh files
+-   Log in to CHTC and submit a job
 
-The general steps 
+## Why a Quarto document and not an Rscript file?
 
-  - Motivate  
-  - Carry out analysis  
-  - Containerized the analysis 
-  - Publish the container to a registry
-  - Generate .sub and .sh files
-  - Log in to CHTC and submit a job
+Quarto or rmarkdown enable you to weave together content and executable code into a finished document. If your intent is to make your process easy to document and easy to reproduce, you should consider doing it this way.
 
-## Why a Quarto document and not an Rscript file? 
+By virtue of writing your workflow first as a document and not as code, you are shifting your attention to making your workflow human readable first. This alone will make it easy for other people to collaborate with you.
 
-Quarto or rmarkdown enable you to weave together content and executable code into a finished document. If your intent is to make your process easy to document and easy to reproduce, you should consider doing it this way. 
-
-By virtue of writing your workflow first as a document and not as code, you are shifting your attention to making your workflow human readable first. This alone will make it easy for other people to collaborate with you. 
-
-The end result of this project **is** to create an rscript that can be shipped to CHTC. So at the end of this document, there is a code chunk that will strip all the text, keep only the code, and place all the code into an .R file.  
+The end result of this project **is** to create an rscript that can be shipped to CHTC. So at the end of this document, there is a code chunk that will strip all the text, keep only the code, and place all the code into an .R file.
 
 ## Special considerations
 
 This workflow will assume the following:
 
-- Your workflow is contained inside an R project.
-- Your project is using the `renv` package, so an updated `lockfile` exists within your project
-- If you need to install additional packages, you will do so with `renv::install()` rather than `install.packages()`
+-   Your workflow is contained inside an R project.
+-   Your project is using the `renv` package, so an updated `lockfile` exists within your project
+-   If you need to install additional packages, you will do so with `renv::install()` rather than `install.packages()`
 
+## Toy analysis
 
-## Toy analysis 
+As mentioned above, the advantage of starting your analysis off from a Quarto (or rmarkdown) document is that you can write your prose along side your code. You can include visuals and diagrams and pretty much anything needed.
 
-As mentioned above, the advantage of starting your analysis off from a Quarto (or rmarkdown) document is that you can write your prose along side your code. You can include visuals and diagrams and pretty much anything needed. 
-
-For instance you can inform the workflow that your analysis follows using a `Mermaid` or a `Graphviz` diagram to help you reader navigate what you are about to do. Check @fig-mermaid to get a bird's-eye view of what the analysis will accomplish. 
+For instance you can inform the workflow that your analysis follows using a `Mermaid` or a `Graphviz` diagram to help you reader navigate what you are about to do. Check @fig-mermaid to get a bird's-eye view of what the analysis will accomplish.
 
 ```{mermaid}
 %%| label: fig-mermaid
@@ -62,32 +61,27 @@ flowchart LR
   E -->F
 ```
 
+Immediately below starts the would-be analysis
 
-Immediately below starts the would-be analysis 
+## Load Packages and Data
 
-## Load Packages and Data 
-
-For this toy analysis, we will load the package `tidyverse` for data manipulation and visualization. The data comes from the `palmerpenguins` dataset. 
-
+For this toy analysis, we will load the package `tidyverse` for data manipulation and visualization. The data comes from the `palmerpenguins` dataset.
 
 ```{r}
 library(tidyverse)
-library(palmerpenguins)
 library(gt)
 
-# Check if the script is running interactively
-is_interactive <- interactive()
-
-if (is_interactive) {
-  # Use hardcoded path for local development/testing
-  data_file <- "data/data.csv"
+data_file <- if (!is.null(params$data_file)) {
+  # Quarto render context: params are defined
+  params$data_file
+} else if (interactive()) {
+  # Interactive session: hardcoded path for development
+  "data/data.csv"
 } else {
-  # Use command-line arguments when running via Rscript
-  args <- commandArgs(trailingOnly = TRUE)
-  if (length(args) < 1) {
-    stop("Missing required argument: data_file path")
-  }
-  data_file <- args[1]
+  # Rscript context: read from command-line arguments
+  args <- commandArgs(trailingOnly = FALSE)
+  if (length(args) < 1) stop("Missing required argument: data_file path")
+  args[1]
 }
 
 data <- read.csv(data_file)
@@ -95,14 +89,13 @@ data <- read.csv(data_file)
 
 ## Tabular results
 
-Sometimes you need numerical results as the output of your analysis. R is great for that. 
+Sometimes you need numerical results as the output of your analysis. R is great for that.
 
-The data we are using to motivate this analysis is the [Palmer Penguins](https://allisonhorst.github.io/palmerpenguins/) data set. 
+The data we are using to motivate this analysis is the [Palmer Penguins](https://allisonhorst.github.io/palmerpenguins/) data set.
 
-We are interested in calculating the traditional measures of tendency (min, max, mean, and standard deviation) for all three species of penguins present in the data set. 
+We are interested in calculating the traditional measures of tendency (min, max, mean, and standard deviation) for all three species of penguins present in the data set.
 
 The code chunk below accomplishes that by grouping the data into subsets by species. Then the four measures of tendency are calculates by the using Base R functions `min`, `max`, `mean`, and `sd`.
-
 
 ```{r}
 #| label: tbl-mot
@@ -124,8 +117,7 @@ moft_bm |>
   )
 ```
 
-@tbl-mot shows that Adelie penguins are the smallest, Chinstrap penguins are the medium-size species, and Gentoo penguins are the lasgest. 
-
+@tbl-mot shows that Adelie penguins are the smallest, Chinstrap penguins are the medium-size species, and Gentoo penguins are the lasgest.
 
 # Visualization results
 
@@ -143,14 +135,13 @@ data |>
     theme_bw()
 ```
 
-At a glance, @fig-boxplot shows Gentoo penguins have the longer flippers of the three species. Adelie penguins have the shortest, but some of the biggest Adelie penguins have flippers are long as some of the small Chintraps. 
+At a glance, @fig-boxplot shows Gentoo penguins have the longer flippers of the three species. Adelie penguins have the shortest, but some of the biggest Adelie penguins have flippers are long as some of the small Chintraps.
 
 ## Saving results
 
-Although notebooks are a great way to share analysis, sometimes we might just want the code or the results of the code, which in our case is the table with the aggregate measurements of central tendency and the plot. 
+Although notebooks are a great way to share analysis, sometimes we might just want the code or the results of the code, which in our case is the table with the aggregate measurements of central tendency and the plot.
 
 The code chunk below accomplishes the latter two using the `write_csv()` function and the `gg_save()` function.
-
 
 ```{r}
 
@@ -159,13 +150,11 @@ moft_bm |> write_csv("results-folder/moft-bm.csv")
 ggsave("results-folder/fl-mm-plot.png")
 ```
 
-
-
 ## Saving the code
 
 To recap, we have a document that is mostly written in language intended to be read by humans; it has formatted text to make it easier to read, contains images and diagrams to better understand the points we are trying to get across, *and* it contains the code that performs the calculations associated with the research. As data scales up, it may make sense to avoid the document-rendering overhead computation costs, as we may not interested in any of the prose, just the code.
 
-We can leverage `knitr`, the engine that powers R in Quarto, to extract just the R code from the Quarto document using the `purl()` function. The code chunk below accomplishes the task described above and creates an .R file from the .qmd in the same directory and sharing the same name. 
+We can leverage `knitr`, the engine that powers R in Quarto, to extract just the R code from the Quarto document using the `purl()` function. The code chunk below accomplishes the task described above and creates an .R file from the .qmd in the same directory and sharing the same name.
 
 ```{r}
 #| eval: false
@@ -175,8 +164,39 @@ We can leverage `knitr`, the engine that powers R in Quarto, to extract just the
     knitr::purl("analysis.qmd", documentation = 1)
 ```
 
+```{r}
+#| eval: false
 
 
 
+# choosing the grouping variable manually, in the package version this will be passed as an 
+# argument 
+
+grouping_variable <- data$species
 
 
+# Split the data df into a list of subsets based on the a grouping variable contained in data
+subsets <- split(data, grouping_variable)
+
+#helper function that takes as an argument a named list and writes a .csv with the contents of each list and names used the naming convention <named-list.csv>
+
+savesublists <- function(df, name){
+  write_csv(df, paste0("data/", name, ".csv"))
+}
+
+
+# Use walk() to write each sublist to a .csv file with the same name as the named_list
+walk2(subsets, names(subsets), savesublists)
+
+
+#subdatasets holds the names of the created subsets.csv
+
+# write.csv(tibble(glue::glue("{names(subsets)}.csv")),
+#           "data/subdatasets.csv",
+#           row.names = FALSE)
+
+file_list <- tibble(filename = glue::glue("{names(subsets)}.csv"))
+write_csv(file_list, "data/subdatasets.csv", col_names = FALSE)
+
+
+```
