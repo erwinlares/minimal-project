@@ -79,7 +79,7 @@ data_file <- if (!is.null(params$data_file)) {
   "data/data.csv"
 } else {
   # Rscript context: read from command-line arguments
-  args <- commandArgs(trailingOnly = FALSE)
+  args <- commandArgs(trailingOnly =TRUE)
   if (length(args) < 1) stop("Missing required argument: data_file path")
   args[1]
 }
