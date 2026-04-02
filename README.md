@@ -64,6 +64,45 @@ all R code chunks and writes them to `analysis.R`. This means:
 - `analysis.R` is always in sync — you never edit it directly
 - Code drift between the document and the script is structurally impossible
 
+### 3. One Codebase, Three Execution Contexts
+
+One of the more subtle — and useful — aspects of this project is that the
+**exact same code** runs correctly in three different contexts without any
+modification:
+
+| Context | How the data file is resolved |
+|---|---|
+| Interactive (RStudio) | Hardcoded path for development (`"data/data.csv"`) |
+| Quarto render (`quarto render`) | Falls back to `params$data_file` defined in the YAML header |
+| Command line (`Rscript`) | Reads the path from a command-line argument (`${1}`) |
+
+This is achieved with a small but deliberate piece of logic at the top of the
+analysis:
+
+```r
+data_file <- if (interactive()) {
+  "data/data.csv"
+} else {
+  args <- commandArgs(trailingOnly = TRUE)
+  if (length(args) >= 1) {
+    args[1]
+  } else {
+    params$data_file
+  }
+}
+```
+
+**Why this matters:** most research scripts are written for one context and then
+manually adapted when the execution environment changes — a path gets hardcoded,
+a parameter gets commented out, a new version of the file gets created. Each
+adaptation is a potential source of bugs and drift. This pattern eliminates that
+entirely. The same file you develop interactively in RStudio is the same file
+that gets extracted into `analysis.R` and run from the command line — no
+modifications, no parallel versions, no drift.
+
+It also means the transition from exploratory analysis to scripted execution is
+not a rewrite — it is just a change in how you invoke the code.
+
 ---
 
 ## Getting Started
@@ -78,10 +117,12 @@ all R code chunks and writes them to `analysis.R`. This means:
 # Restore package environment
 renv::restore()
 
-# Render the document (also regenerates analysis.R)
+# Render the document (also regenerates analysis.R via post-render hook)
 quarto::quarto_render("analysis.qmd")
+```
 
-# Or run the extracted R script directly
+```bash
+# Run the extracted R script directly from the command line
 Rscript analysis.R data/data.csv
 ```
 
@@ -99,10 +140,8 @@ package management.
 
 ## Special Considerations
 
-- The data file path is resolved in order of context: interactive RStudio session
-  → command-line argument (`Rscript analysis.R <file>`) → Quarto params fallback.
-  This makes the same code work across all three execution contexts without
-  modification.
 - Plot rendering is suppressed when running as `Rscript` to avoid generating a
-  stray `Rplots.pdf`.
-- Results are saved to `results-folder/` as a `.csv` and `.png`.
+  stray `Rplots.pdf`. Plots are only rendered in interactive and Quarto contexts
+  where there is a meaningful destination for them.
+- Results are saved to `results-folder/` as a `.csv` and `.png`, regardless of
+  execution context.
