@@ -13,3 +13,5 @@ data/subdatasets.csv
 results-folder/
 
 *.pdf
+*.html
+analysis_files/
