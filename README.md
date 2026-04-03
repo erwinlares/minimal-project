@@ -26,7 +26,10 @@ The long-term goal is to show that a project can start as a mostly human-focused
 ├── purl.R                # Post-render script that extracts R code from .qmd
 ├── _quarto.yml           # Quarto project config; triggers purl.R post-render
 ├── renv.lock             # renv lockfile for reproducible package environment
-└── minimal-project.Rproj # RStudio project file
+├── minimal-project.Rproj # RStudio project file
+├── data/
+│   └── data.csv          # Input data
+└── results-folder/       # Output .csv and .png written here
 ```
 
 ---
@@ -76,8 +79,7 @@ data_file <- if (interactive()) {
 }
 ```
 
-**Why this matters:** most research scripts are written for one context and then manually adapted when the execution environment changes — a path gets hardcoded, a parameter gets commented out, a new version of the file gets created. Each adaptation is a potential source of bugs and drift. This pattern eliminates that
-entirely. The same file you develop interactively in RStudio is the same file that gets extracted into `analysis.R` and run from the command line — no modifications, no parallel versions, no drift.
+**Why this matters:** most research scripts are written for one context and then manually adapted when the execution environment changes — a path gets hardcoded, a parameter gets commented out, a new version of the file gets created. Each adaptation is a potential source of bugs and drift. This pattern eliminates that entirely. The same file you develop interactively in RStudio is the same file that gets extracted into `analysis.R` and run from the command line — no modifications, no parallel versions, no drift.
 
 It also means the transition from exploratory analysis to scripted execution is not a rewrite — it is just a change in how you invoke the code.
 

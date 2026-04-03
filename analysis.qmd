@@ -78,7 +78,9 @@ The analysis begins immediately below.
 
 ## Load Packages and Data
 
-One of the subtle challenges of writing analysis code that lives in a Quarto document is that the same code may be executed in very different contexts: interactively in RStudio while you are developing, via quarto render when producing the final document, or via Rscript when running headlessly on a remote machine. Each context has a different and natural way of receiving inputs. The code below handles all three gracefully with a single, self-contained logic block. In an interactive session, the data path is hardcoded — convenient for development. When called from the command line via Rscript, the path is passed as a positional argument, which is how a job scheduler would supply it. When rendering the document with Quarto, the path falls back to the params block defined in the YAML header. The result is that data_file is always resolved to the right value regardless of how the code is being run, with no changes required between contexts. This makes the .qmd — and the .R file derived from it — genuinely portable.
+One of the subtle challenges of writing analysis code that lives in a Quarto document is that the same code may be executed in very different contexts: interactively in RStudio while you are developing, via quarto render when producing the final document, or via Rscript when running headlessly on a remote machine. Each context has a different and natural way of receiving inputs. The code below handles all three gracefully with a single, self-contained logic block. 
+
+In an interactive session, the data path is hardcoded — convenient for development. When called from the command line via Rscript, the path is passed as a positional argument, which is how a job scheduler would supply it. When rendering the document with Quarto, the path falls back to the params block defined in the YAML header. The result is that data_file is always resolved to the right value regardless of how the code is being run, with no changes required between contexts. This makes the .qmd — and the .R file derived from it — genuinely portable.
 
 ```{r}
 library(tidyverse)
@@ -220,3 +222,10 @@ walk2(subsets, names(subsets), save_sublist)
 file_list <- tibble(filename = glue::glue("{names(subsets)}.csv"))
 write_csv(file_list, "data/subdatasets.csv", col_names = FALSE)
 ```
+
+## Final thoughts
+
+The penguin data was never really the point. The measures of central tendency, the boxplots, the species comparisons — those were placeholders, a way to have something concrete to work with. The real subject of this document is the set of intentional decisions made around the analysis: starting in a Quarto document, writing prose alongside code, resolving the data path across execution contexts, and deriving the machine-friendly `.R` file from a single source of truth rather than maintaining two versions in parallel.
+
+None of these steps are complicated on their own. But taken together, they form a foundation that pays dividends over time. The code is easier to return to, easier to hand off, and easier to scale. When the analysis eventually needs to run on a cluster or be reproduced by a collaborator, the groundwork is already in place — not as an afterthought, but as a natural consequence of how the project was set up from the start. That is the habit worth building. The penguins were just along for the ride.
+
