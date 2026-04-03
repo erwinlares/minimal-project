@@ -1,5 +1,6 @@
 ---
-title: "Analysis"
+title: "From the Notebook to the Cluster"
+subtitle: "Part 1: Start with the Document"
 author: "Erwin Lares"
 affiliation: "Research Cyberinfrastructure at DoIT"
 format:

@@ -1,4 +1,4 @@
-# Minimal R Project: From Quarto Document to R Script
+# From the Notebook to the Cluster, Part 1: Start with the Document
 
 > A reference pattern for R analysts who want reproducible, portable, and maintainable projects from day one.
 
@@ -10,7 +10,7 @@ Code: https://github.com/erwinlares/minimal-project
 
 Most R projects start as a script. It works — until you need to share it, re-run it six months later, or move it to a cluster. At that point, paths are hardcoded, context assumptions are buried, and keeping a `.R` file in sync with a `.qmd` narrative becomes a manual chore.
 
-This project demonstrates a pattern that avoids those problems by treating the Quarto document as the **single source of truth**. The `.R` script is derived from it automatically. The same code runs without modification in RStudio, via `quarto render`, and from the command line.
+This project demonstrates a pattern that avoids those problems by treating the Quarto document as the **single source of truth**. The `.R` script is derived from it automatically. The same code runs without modification in RStudio, via `quarto render`, and from the command line. This is Part 1 of a series — the foundation you lay before scaling to a cluster.
 
 ---
 
