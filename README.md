@@ -1,6 +1,6 @@
 # Minimal R Project: From Quarto Document to R Script
 
-A basic data science project that demonstrates how to start with a human-friendly Quarto document and automatically derive machine-ready artifacts from it — with no manual syncing and no risk of code drift.
+A basic data science project that demonstrates how to start with a human-friendly Quarto document and automatically derive machine-ready artifacts from it — with no manual syncing and minimal risk of code drift.
 
 ## The Core Idea
 
