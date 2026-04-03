@@ -2,6 +2,8 @@
 
 A basic data science project that demonstrates how to start with a human-friendly Quarto document and automatically derive machine-ready artifacts from it — with no manual syncing and minimal risk of code drift.
 
+A copy of the code lives here: https://github.com/erwinlares/minimal-project
+
 ## The Core Idea
 
 Most research projects start as code. This one starts as a **document**.
