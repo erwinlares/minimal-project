@@ -78,7 +78,7 @@ The analysis begins immediately below.
 
 ## Load Packages and Data
 
-For this toy analysis, we will load the package `tidyverse` for data manipulation and visualization. The data comes from the `palmerpenguins` dataset.
+One of the subtle challenges of writing analysis code that lives in a Quarto document is that the same code may be executed in very different contexts: interactively in RStudio while you are developing, via quarto render when producing the final document, or via Rscript when running headlessly on a remote machine. Each context has a different and natural way of receiving inputs. The code below handles all three gracefully with a single, self-contained logic block. In an interactive session, the data path is hardcoded — convenient for development. When called from the command line via Rscript, the path is passed as a positional argument, which is how a job scheduler would supply it. When rendering the document with Quarto, the path falls back to the params block defined in the YAML header. The result is that data_file is always resolved to the right value regardless of how the code is being run, with no changes required between contexts. This makes the .qmd — and the .R file derived from it — genuinely portable.
 
 ```{r}
 library(tidyverse)
@@ -99,6 +99,8 @@ data_file <- if (interactive()) {
 }
 
 data <- read_csv(data_file)
+args <- commandArgs(trailingOnly = TRUE)
+
 ```
 
 ## Tabular results
@@ -122,14 +124,19 @@ moft_bm <- data |>
               mean_fl = mean(flipper_length_mm, na.rm = TRUE),
               sd_fl = sd(flipper_length_mm, na.rm = TRUE))
 
-moft_bm |> 
+t <- moft_bm |> 
   gt() |> 
   fmt_number(decimals = 0) |> 
   tab_header(
     title = "Measures of Tendency",
     subtitle = "Flipper Length in mm"
-  ) |> 
-  invisible()
+  )
+
+# Renders table in Quarto/interactive contexts, suppress in Rscript to avoid Rplots.pdf
+
+if (length(args) == 0) t
+
+
 ```
 
 @tbl-mot shows that Adelie penguins are the smallest, Chinstrap penguins are the medium-sized species, and Gentoo penguins are the largest.
@@ -150,7 +157,7 @@ p <- data |>
     theme_bw()
 
 # Print plot in Quarto/interactive contexts, suppress in Rscript to avoid Rplots.pdf
-args <- commandArgs(trailingOnly = TRUE)
+
 if (length(args) == 0) p
 ```
 
