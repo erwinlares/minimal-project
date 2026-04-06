@@ -1,1 +1,1 @@
-knitr::purl("analysis.qmd", documentation = 1)
+knitr::purl("notebook2cluster-p1-start-with-the-document.qmd", documentation = 1)

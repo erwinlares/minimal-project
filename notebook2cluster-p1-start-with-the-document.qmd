@@ -17,7 +17,7 @@ params:
 
 ## The long game
 
-This document is a walkthrough, not a domain analysis. The Palmer Penguin dataset is a placeholder. What matters is the structure around it: how the project is organized, how inputs are resolved, and how the machine-readable script is derived from the human-readable document. Those decisions transfer to any analysis you write — and will help you keep your sanity.
+This document walks through a set of structural decisions that transfer to any analysis you write: how to organize a project, how to resolve inputs across execution contexts, and how to derive a machine-readable script from a human-readable document. The Palmer Penguins dataset is just a vehicle. The patterns are the point — and when the time comes to scale up, they will have already done half the work for you.
 
 ## Why a Quarto document and not an Rscript file?
 
@@ -163,19 +163,25 @@ flipper_stats |> write_csv("results-folder/flipper-stats.csv")
 ggsave("results-folder/fl-mm-plot.png", plot = p)
 ```
 
+
 ## Saving the code
 
 When the analysis needs to run at scale, the document-rendering overhead is unnecessary — you want the code, not the narrative. `knitr::purl()` extracts all R code chunks from the `.qmd` and writes them to a standalone `.R` file with the same base name.
 
-```{r}
-#| eval: false
+In this project, `purl()` is not called directly from within the document. Instead, it lives in a dedicated script — `purl.R` — that is registered as a post-render hook in `_quarto.yml`:
 
-#    knitr::purl("analysis.qmd", documentation = 1)
+```yaml
+project:
+  post-render:
+    - purl.R
+```
 
-# knitr::purl() was moved to purl.R and is called as a Quarto post-render script
-# via _quarto.yml. This ensures analysis.R is automatically regenerated from
-# analysis.qmd on every successful render, eliminating the risk of code drift
-# between the two files.
+This means that every time the document is rendered, `purl.R` runs automatically and regenerates `notebook2cluster-p1-start-with-the-document.R` from the current state of the `.qmd`. You never have to remember to extract the code manually, and the two files cannot drift out of sync as long as you render before you run.
+
+The `documentation` argument controls how much of the prose carries over into the generated script. With `documentation = 1`, section comments are included as `#` comments, giving the `.R` file enough context to be readable on its own. With `documentation = 0`, only the bare code is written — useful if the script will be passed directly to a scheduler with no human reader in the loop.
+
+```r
+knitr::purl("notebook2cluster-p1-start-with-the-document.qmd", documentation = 1)
 ```
 
 ## Creating the ancillary files for command line execution 
@@ -220,11 +226,11 @@ split_and_save(data, grouping_var = "species", write_manifest = TRUE)
 
 Once analysis.R has been generated and the data has been split into subsets, each subset can be processed independently by passing it as a command-line argument:
 
-`Rscript analysis.R data/Adelie.csv`
+`Rscript notebook2cluster-p1-start-with-the-document.R data/Adelie.csv`
 
 This is the same invocation that a job scheduler on an HTC or HPC cluster would use — one call per file, each running independently. At small scale you run it manually; at large scale you hand that same command to a submit script and let the scheduler parallelize across as many files as you have.
 
-The fact that no changes are required between the two scenarios is the point. The portability was built in from the start — in the input-resolution logic in analysis.qmd, carried forward automatically into analysis.R. When the time comes to scale, the transition is a change in infrastructure, not a rewrite of the code.
+The fact that no changes are required between the two scenarios is the point. The portability was built in from the start — in the input-resolution logic in notebook2cluster-p1-start-with-the-document.qmd, carried forward automatically into notebook2cluster-p1-start-with-the-document.R. When the time comes to scale, the transition is a change in infrastructure, not a rewrite of the code.
 
 ## Final thoughts
 
