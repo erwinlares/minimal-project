@@ -1,7 +1,7 @@
 ---
 title: "From the Notebook to the Cluster"
 subtitle: "Part 1: Start with the Document"
-author: "Erwin Lares"
+author: "Erwin Lares @ RCI"
 affiliation: "Research Cyberinfrastructure at DoIT"
 format:
   html:
@@ -17,27 +17,15 @@ params:
 
 ## The long game
 
-This document is a **reference pattern**, not a domain analysis. The penguin data is a placeholder. What matters is the structure around it: how the project is organized, how inputs are resolved, and how the machine-readable script is derived from the human-readable document. Those decisions transfer to any analysis you write.
-
-The general workflow this document demonstrates:
-
--   Start with a Quarto document as the project blueprint
--   Write human-readable analysis with embedded, executable code
--   Derive a machine-friendly `.R` script automatically via `knitr::purl()`
--   Support execution across interactive sessions, `quarto render`, and `Rscript` from a single source file
--   Lay the groundwork for containerization and scaled execution when the time comes
+This document is a walkthrough, not a domain analysis. The Palmer Penguin dataset is a placeholder. What matters is the structure around it: how the project is organized, how inputs are resolved, and how the machine-readable script is derived from the human-readable document. Those decisions transfer to any analysis you write — and will help you keep your sanity.
 
 ## Why a Quarto document and not an Rscript file?
 
-Most research software projects start as code. A script gets written, it works, and then the hard work begins — trying to remember why certain decisions were made, what the inputs mean, and what the output actually represents. Documentation, if it exists at all, is an afterthought. Collaboration becomes difficult. Reproducibility becomes a promise that is hard to keep.
+Most research projects start as a script. It works — until you need to share it, revisit it six months later, or explain why a decision was made. Documentation becomes an afterthought, and reproducibility becomes a promise that is hard to keep.
 
-There is a better way to start.
+Quarto lets you write prose, code, and output in a single document. By writing the workflow as a document first, you articulate *what* you are doing and *why* alongside the code that implements it. New collaborators can follow the logic without reverse-engineering the script. Reviewers see the reasoning and the results together.
 
-Quarto and R Markdown let you weave together prose, code, and output into a single document. By writing your workflow as a document first, you shift your attention to making your process human readable before it is machine executable. This is not just a stylistic preference — it is a fundamentally different way of thinking about research software. You are forced to articulate what you are doing and why, not just how. The result is a living document that serves as specification, implementation, and documentation all at once.
-
-This approach has compounding benefits. New collaborators can read the document and understand the project without needing to reverse-engineer the code. Reviewers can follow the logic of your analysis alongside the code that implements it. Your future self will thank you when you return to the project six months later.
-
-Crucially, choosing to start with a Quarto document does not mean sacrificing the machine-friendly code you need to actually run your analysis at scale. At the end of this document, a single step automatically extracts all the code blocks and writes them to a standalone `.R` file. That file can be containerized, shipped to a computing cluster, and executed without any of the document overhead. You maintain a single source of truth — the `.qmd` — and the machine-readable code is a derived artifact of it, always up to date, never out of sync.
+Crucially, this does not mean sacrificing a machine-executable artifact. At the end of this document, `knitr::purl()` extracts all R code chunks and writes them to a standalone `.R` file automatically on every render. That file can be containerized and run on a cluster without any document overhead. The `.qmd` is the source of truth; `analysis.R` is a derived artifact — always current, never manually maintained.
 
 ## Limitations and tradeoffs
 
@@ -115,14 +103,14 @@ The code chunk below accomplishes that by grouping the data into subsets by spec
 #| label: tbl-mot
 #| tbl-cap: "Measures of tendency for 3 penguin species"
 
-moft_bm <- data |>
+flipper_stats <- data |>
     group_by(species) |>
     summarize(min_fl = min(flipper_length_mm, na.rm = TRUE),
               max_fl = max(flipper_length_mm, na.rm = TRUE),
               mean_fl = mean(flipper_length_mm, na.rm = TRUE),
               sd_fl = sd(flipper_length_mm, na.rm = TRUE))
 
-t <- moft_bm |> 
+flipper_stats_tbl <- flipper_stats |> 
   gt() |> 
   fmt_number(decimals = 0) |> 
   tab_header(
@@ -132,8 +120,7 @@ t <- moft_bm |>
 
 # Renders table in Quarto/interactive contexts, suppress in Rscript to avoid Rplots.pdf
 
-if (length(args) == 0) t
-
+if (length(args) == 0) flipper_stats_tbl
 
 ```
 
@@ -165,24 +152,20 @@ if (length(args) == 0) p
 
 ## Saving results
 
-Although notebooks are a great way to share analysis, sometimes we might just want the results of the code — in our case, the table of aggregate measures of central tendency and the plot.
-
-The code chunk below accomplishes that using the `write_csv()` function and the `ggsave()` function.
+The code chunk below writes the summary statistics table to a `.csv` and the plot to a `.png`.
 
 ```{r}
 
 dir.create("results-folder", showWarnings = FALSE)
 
-moft_bm |> write_csv("results-folder/moft-bm.csv")
+flipper_stats |> write_csv("results-folder/flipper-stats.csv")
 
 ggsave("results-folder/fl-mm-plot.png", plot = p)
 ```
 
 ## Saving the code
 
-To recap, we have a document that is mostly written in language intended to be read by humans: it has formatted text to make it easier to read, contains images and diagrams to better convey the points we are trying to get across, *and* it contains the code that performs the actual calculations. As data scales up, it may make sense to avoid the document-rendering overhead, since at that stage we are interested in running the code rather than producing the narrative document.
-
-We can leverage `knitr`, the engine that powers R in Quarto, to extract just the R code from the Quarto document using the `purl()` function. The code chunk below creates an `.R` file from the `.qmd`, placing it in the same directory and giving it the same base name.
+When the analysis needs to run at scale, the document-rendering overhead is unnecessary — you want the code, not the narrative. `knitr::purl()` extracts all R code chunks from the `.qmd` and writes them to a standalone `.R` file with the same base name.
 
 ```{r}
 #| eval: false
@@ -199,33 +182,51 @@ We can leverage `knitr`, the engine that powers R in Quarto, to extract just the
 
 As an analysis grows, it is often useful to split the input data into subsets — one per group — so that each subset can be processed independently. This is particularly valuable when preparing work for scaled execution, where individual files can be dispatched as separate jobs.
 
-The code chunk below splits the data by species, writes each subset to its own `.csv` file, and saves a manifest of those filenames to `data/subdatasets.csv` for downstream use.
+The code chunk below splits the data by species, writes each subset to its own `.csv` file, and optionally saves a manifest of those filenames to `data/manifest.csv` for downstream use.
 
 ```{r}
-#| eval: false
 
-# grouping variable; would be a function argument in a package context
-grouping_variable <- data$species
-
-# split data into a named list by group
-subsets <- split(data, grouping_variable)
-
-# write one subset to disk as <name>.csv
-save_sublist <- function(df, name){
-  write_csv(df, paste0("data/", name, ".csv"))
+split_and_save <- function(data, grouping_var, write_manifest = TRUE) {
+  
+  # validate that grouping_var exists in data
+  if (!grouping_var %in% names(data)) {
+    stop(glue::glue("Column '{grouping_var}' not found in data."))
+  }
+  
+  # split data into a named list by group
+  subsets <- split(data, data[[grouping_var]])
+  
+  # write one subset to disk as <name>.csv
+  save_subset <- function(df, name) {
+    write_csv(df, paste0("data/", name, ".csv"))
+  }
+  
+  # write all subsets to disk
+  walk2(subsets, names(subsets), save_subset)
+  
+  # optionally write a manifest of created filenames
+  if (write_manifest) {
+    tibble(filename = glue::glue("{names(subsets)}.csv")) |>
+      write_csv("data/manifest.csv", col_names = FALSE)
+  }
+  
+  invisible(length(subsets))
 }
 
-# write all subsets to disk
-walk2(subsets, names(subsets), save_sublist)
-
-# save a filename manifest for downstream use
-file_list <- tibble(filename = glue::glue("{names(subsets)}.csv"))
-write_csv(file_list, "data/subdatasets.csv", col_names = FALSE)
+split_and_save(data, grouping_var = "species", write_manifest = TRUE)
 ```
+
+## Running the derived script from the command line
+
+Once analysis.R has been generated and the data has been split into subsets, each subset can be processed independently by passing it as a command-line argument:
+
+`Rscript analysis.R data/Adelie.csv`
+
+This is the same invocation that a job scheduler on an HTC or HPC cluster would use — one call per file, each running independently. At small scale you run it manually; at large scale you hand that same command to a submit script and let the scheduler parallelize across as many files as you have.
+
+The fact that no changes are required between the two scenarios is the point. The portability was built in from the start — in the input-resolution logic in analysis.qmd, carried forward automatically into analysis.R. When the time comes to scale, the transition is a change in infrastructure, not a rewrite of the code.
 
 ## Final thoughts
 
-The penguin data was never really the point. The measures of central tendency, the boxplots, the species comparisons — those were placeholders, a way to have something concrete to work with. The real subject of this document is the set of intentional decisions made around the analysis: starting in a Quarto document, writing prose alongside code, resolving the data path across execution contexts, and deriving the machine-friendly `.R` file from a single source of truth rather than maintaining two versions in parallel.
-
-None of these steps are complicated on their own. But taken together, they form a foundation that pays dividends over time. The code is easier to return to, easier to hand off, and easier to scale. When the analysis eventually needs to run on a cluster or be reproduced by a collaborator, the groundwork is already in place — not as an afterthought, but as a natural consequence of how the project was set up from the start. That is the habit worth building. The penguins were just along for the ride.
+The penguin data was never really the point. The summary statistics and boxplots were placeholders — concrete enough to demonstrate the pattern, simple enough to stay out of the way. What this document is actually about is the set of decisions made around the analysis: where to start, how to handle inputs across contexts, and how to keep the human-readable and machine-readable versions of your work from drifting apart. Those habits are worth building early, regardless of what the analysis is about.
 
